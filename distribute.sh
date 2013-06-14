@@ -6,8 +6,8 @@
 #
 #------------------------------------------------------------------------------
 export ANDROIDSDK="/home/dejavu/android/sdk"
-export ANDROIDNDK="/home/dejavu/android/android-ndk-r8c"
-export ANDROIDNDKVER=r8c
+export ANDROIDNDK="/home/dejavu/android/android-ndk-r8d"
+export ANDROIDNDKVER=r8d
 export ANDROIDAPI=14
 # Modules
 MODULES=$MODULES
@@ -328,6 +328,10 @@ function run_prepare() {
 		try rm -rf $BUILD_PATH
 		try rm -rf $SRC_PATH/obj
 		try rm -rf $SRC_PATH/libs
+		try rm -rf $RECIPES_PATH/python_launcher/libs
+		try rm -rf $RECIPES_PATH/python_launcher/obj
+		try rm -rf $RECIPES_PATH/libnetfilter_queue/libs
+		try rm -rf $RECIPES_PATH/libnetfilter_queue/obj
 	fi
 
 	# create build directory if not found
@@ -612,6 +616,7 @@ function run_distribute() {
 	try rm -rf config/python.o
 	try rm -rf sqlite3
 	try rm -rf curses
+	try rm -rf distutils
 	try rm -rf lib-dynload/_ctypes_test.so
 	try rm -rf lib-dynload/_testcapi.so
 
@@ -619,6 +624,7 @@ function run_distribute() {
     mkdir $DIST_PATH/private/bin
     cp $RECIPES_PATH/python_launcher/libs/$ARCH/python_launcher $DIST_PATH/private/bin/python
     cp $RECIPES_PATH/python_launcher/python-launcher.sh $DIST_PATH/private/bin
+    cp $RECIPES_PATH/libnetfilter_queue/libs/$ARCH/libnetfilter_queue.so $DIST_PATH/private/lib
 
 	debug "Strip libraries"
 	push_arm
@@ -629,6 +635,10 @@ function run_distribute() {
 	zip -9 -r $ROOT_PATH/python.zip bin
 	zip -9 -r $ROOT_PATH/python.zip lib
 	zip -9 -r $ROOT_PATH/python.zip include
+
+	cd $DIST_PATH/private/lib
+	ln -s libssl.so libssl.so.1.0.0
+	ln -s libcrypto.so libcrypto.so.1.0.0
 }
 
 function run_biglink() {

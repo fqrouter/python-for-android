@@ -17,4 +17,6 @@ testsuite
 
 recipes/python_launcher/libs
 recipes/python_launcher/obj
+recipes/libnetfilter_queue/libs
+recipes/libnetfilter_queue/obj
 python.zip

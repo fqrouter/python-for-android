@@ -24,6 +24,7 @@ function build_openssl() {
 	try make
 	try make build-shared
 	rm *.a
+	rm *.so
 	mv libssl.so.1.0.0 $BUILD_PATH/libs/libssl.so
 	mv libcrypto.so.1.0.0 $BUILD_PATH/libs/libcrypto.so
 
