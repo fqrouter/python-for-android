@@ -12,3 +12,9 @@ testsuite
 #ECLIPSE + PYDEV
 .project
 .pydevproject
+.idea
+.packages
+
+recipes/python_launcher/libs
+recipes/python_launcher/obj
+python.zip

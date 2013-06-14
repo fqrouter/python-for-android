@@ -5,7 +5,10 @@
 # https://github.com/tito/python-for-android
 #
 #------------------------------------------------------------------------------
-
+export ANDROIDSDK="/home/dejavu/android/sdk"
+export ANDROIDNDK="/home/dejavu/android/android-ndk-r8c"
+export ANDROIDNDKVER=r8c
+export ANDROIDAPI=14
 # Modules
 MODULES=$MODULES
 
@@ -580,19 +583,19 @@ function run_distribute() {
 	try cp -a $BUILD_PATH/libs/* libs/$ARCH/
 
 	debug "Copy java files from various libs"
-	cp -a $BUILD_PATH/java/* src
+	#cp -a $BUILD_PATH/java/* src
 
 	debug "Fill private directory"
-	try cp -a python-install/lib private/
+	try cp -a $BUILD_PATH/python-install/lib private/
 	try mkdir -p private/include/python2.7
-	try mv libs/$ARCH/libpymodules.so private/
-	try cp python-install/include/python2.7/pyconfig.h private/include/python2.7/
+	#try mv libs/$ARCH/libpymodules.so private/
+	try cp $BUILD_PATH/python-install/include/python2.7/pyconfig.h private/include/python2.7/
 
 	debug "Reduce private directory from unwanted files"
 	try rm -f "$DIST_PATH"/private/lib/libpython2.7.so
 	try rm -rf "$DIST_PATH"/private/lib/pkgconfig
 	try cd "$DIST_PATH"/private/lib/python2.7
-	try find . | grep -E '*\.(py|pyc|so\.o|so\.a|so\.libs)$' | xargs rm
+	try find . | grep -E '*\.(py|pyo|so\.o|so\.a|so\.libs)$' | xargs rm
 
 	# we are sure that all of theses will be never used on android (well...)
 	try rm -rf test
@@ -607,18 +610,29 @@ function run_distribute() {
 	try rm -rf bsddb/test
 	try rm -rf config/libpython*.a
 	try rm -rf config/python.o
+	try rm -rf sqlite3
 	try rm -rf curses
 	try rm -rf lib-dynload/_ctypes_test.so
 	try rm -rf lib-dynload/_testcapi.so
 
+    cp $BUILD_PATH/libs/*.so $DIST_PATH/private/lib
+    mkdir $DIST_PATH/private/bin
+    cp $RECIPES_PATH/python_launcher/libs/$ARCH/python_launcher $DIST_PATH/private/bin/python
+    cp $RECIPES_PATH/python_launcher/python-launcher.sh $DIST_PATH/private/bin
+
 	debug "Strip libraries"
 	push_arm
-	try find "$DIST_PATH"/private "$DIST_PATH"/libs -iname '*.so' -exec $STRIP {} \;
+	try find "$DIST_PATH"/private -iname '*.so' -exec $STRIP {} \;
 	pop_arm
 
+    cd $DIST_PATH/private
+	zip -9 -r $ROOT_PATH/python.zip bin
+	zip -9 -r $ROOT_PATH/python.zip lib
+	zip -9 -r $ROOT_PATH/python.zip include
 }
 
 function run_biglink() {
+    return
 	push_arm
 	try $BIGLINK $LIBS_PATH/libpymodules.so $LIBLINK_PATH
 	pop_arm

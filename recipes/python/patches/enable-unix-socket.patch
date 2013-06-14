@@ -1,0 +1,11 @@
+diff -r Modules/socketmodule.h
+--- a/Modules/socketmodule.h    2011-06-11 17:46:27.000000000 +0200
++++ b/Modules/socketmodule.h	2012-08-18 14:11:55.379345818 +0200
+@@ -32,6 +32,7 @@
+ # endif /* IPPROTO_IPV6 */
+ #endif /* MS_WINDOWS */
+
++#define HAVE_SYS_UN_H
+ #ifdef HAVE_SYS_UN_H
+ # include <sys/un.h>
+ #else

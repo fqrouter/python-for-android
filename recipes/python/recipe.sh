@@ -28,6 +28,9 @@ function prebuild_python() {
 	try patch -p1 < $RECIPE_python/patches/verbose-compilation.patch
 	try patch -p1 < $RECIPE_python/patches/fix-remove-corefoundation.patch
 	try patch -p1 < $RECIPE_python/patches/fix-dynamic-lookup.patch
+	try patch -p1 < $RECIPE_python/patches/npn.patch
+	try patch -p1 < $RECIPE_python/patches/fix-sendfd.patch
+	try patch -p1 < $RECIPE_python/patches/enable-unix-socket.patch
 
 	system=$(uname -s)
 	if [ "X$system" == "XDarwin" ]; then
@@ -59,7 +62,7 @@ function build_python() {
 	if [ "X$BUILD_openssl" != "X" ]; then
 		debug "Activate flags for openssl / python"
 		export CFLAGS="$CFLAGS -I$BUILD_openssl/include/"
-		export LDFLAGS="$LDFLAGS -L$BUILD_openssl/"
+		export LDFLAGS="$LDFLAGS -L$LIBS_PATH/"
 	fi
 
 	# sqlite3 activated ?

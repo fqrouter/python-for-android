@@ -14,14 +14,18 @@ function prebuild_openssl() {
 function build_openssl() {
 	cd $BUILD_openssl
 
-	if [ -f libssl.a ]; then
+	if [ -f $BUILD_PATH/libs/libssl.so ]; then
 		return
 	fi
 
 	push_arm
 
 	try ./Configure no-dso no-krb5 linux-armv4
-	try make build_libs
+	try make
+	try make build-shared
+	rm *.a
+	mv libssl.so.1.0.0 $BUILD_PATH/libs/libssl.so
+	mv libcrypto.so.1.0.0 $BUILD_PATH/libs/libcrypto.so
 
 	pop_arm
 }
