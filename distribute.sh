@@ -138,7 +138,7 @@ function push_arm() {
 	#export OFLAG="-Os"
 	#export OFLAG="-O2"
 
-	export CFLAGS="-mandroid $OFLAG -fomit-frame-pointer --sysroot $NDKPLATFORM"
+	export CFLAGS="-DANDROID -mandroid $OFLAG -fomit-frame-pointer --sysroot $NDKPLATFORM"
 	if [ "X$ARCH" == "Xarmeabi-v7a" ]; then
 		CFLAGS+=" -march=armv7-a -mfloat-abi=softfp -mfpu=vfp -mthumb"
 	fi
@@ -165,7 +165,7 @@ function push_arm() {
 		export TOOLCHAIN_VERSION=4.4.3
 	fi
 
-	export PATH="$ANDROIDNDK/toolchains/$TOOLCHAIN_PREFIX-$TOOLCHAIN_VERSION/prebuilt/$PYPLATFORM-x86/bin/:$ANDROIDNDK:$ANDROIDSDK/tools:$PATH"
+	export PATH="$ANDROIDNDK/toolchains/$TOOLCHAIN_PREFIX-$TOOLCHAIN_VERSION/prebuilt/$PYPLATFORM-x86/bin/:$ANDROIDNDK/toolchains/$TOOLCHAIN_PREFIX-$TOOLCHAIN_VERSION/prebuilt/$PYPLATFORM-x86_64/bin/:$ANDROIDNDK:$ANDROIDSDK/tools:$PATH"
 
 	# search compiler in the path, to fail now instead of later.
 	CC=$(which $TOOLCHAIN_PREFIX-gcc)
@@ -438,6 +438,20 @@ function run_get_packages() {
 
 	for module in $MODULES; do
 		# download dependencies for this module
+		# check if there is not an overload from environment
+		module_dir=$(eval "echo \$P4A_${module}_DIR")
+		if [ "$module_dir" ]
+		then
+			debug "\$P4A_${module}_DIR is not empty, linking $module_dir dir instead of downloading"
+			directory=$(eval "echo \$BUILD_${module}")
+			if [ -e $directory ]; then
+				try rm -rf "$directory"
+			fi
+			try mkdir -p "$directory"
+			try rmdir "$directory"
+			try ln -s "$module_dir" "$directory"
+			continue
+		fi
 		debug "Download package for $module"
 
 		url="URL_$module"

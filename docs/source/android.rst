@@ -313,6 +313,72 @@ Please have a look into the code and you are very welcome to contribute to
 this documentation.
 
 
+Android Service
+---------------
+
+Service part of the application is controlled through the class :class:`AndroidService`.
+
+.. module:: android
+
+.. class:: AndroidService(title, description)
+
+    Run ``service/main.py`` from application directory as a service.
+
+    :Parameters:
+        `title`: str, default to 'Python service'
+            Notification title.
+
+        `description`: str, default to 'Kivy Python service started'
+            Notification text.
+
+    .. method:: start(arg)
+
+        Start the service.
+
+            :Parameters:
+                `arg`: str, default to ''
+                    Argument to pass to a service,
+                    through environment variable ``PYTHON_SERVICE_ARGUMENT``.
+
+    .. method:: stop()
+
+        Stop the service.
+
+Application activity part example, ``main.py``:
+
+.. code-block:: python
+
+  from android import AndroidService
+
+  ...
+
+   class ServiceExample(App):
+
+    ...
+
+       def start_service(self):
+           self.service = AndroidService('Sevice example', 'service is running')
+           self.service.start('Hello From Service')
+
+       def stop_service(self):
+           self.service.stop()
+
+Application service part example, ``service/main.py``:
+
+.. code-block:: python
+
+   import os
+   import time
+
+   # get the argument passed
+   arg = os.getenv('PYTHON_SERVICE_ARGUMENT')
+
+   while True:
+       # this will print 'Hello From Service' continually, even when application is switched
+       print arg
+       time.sleep(1)
+
+
 How it's working without PyJNIus
 --------------------------------
 
@@ -347,6 +413,84 @@ Example without PyJNIus
     # read screen dpi
     print android.get_dpi()
 
+
+Bridges
+-------
+
+Some part of the Android API is not accessible from PyJNIus. For example, if
+you want to receive some broadcast, you need to implement a `BroadcastReceiver
+<http://developer.android.com/reference/android/content/BroadcastReceiver.html>`_.
+PyJNIus allows you to implement dynamically classes from Java interfaces, but
+unfortunately, the `BroadcastReceiver` is an abstract class.
+
+So we started to create bridges for this case.
+
+android_broadcast
+~~~~~~~~~~~~~~~~~
+
+.. module:: android_broadcast
+
+.. class:: BroadcastReceiver
+
+    Implementation of the android `BroadcastReceiver
+    <http://developer.android.com/reference/android/content/BroadcastReceiver.html>`_.
+    You can specify the callback that will receive the broadcast event, and
+    actions or categories filters.
+
+    .. warning::
+
+        The callback will be called in another thread than the main thread. Be
+        careful to not access to OpenGL or something like that.
+
+    .. method:: __init__(callback, actions=None, categories=None)
+
+        :param callback: function or method that will receive the event. Will
+                         receive the context and intent as argument.
+        :param actions: list of strings that represent an action.
+        :param categories: list of strings that represent a category.
+
+        For actions and categories, the string must be in lower case, without the prefix::
+
+            # In java: Intent.ACTION_HEADSET_PLUG
+            # In python: 'headset_plug'
+
+    .. method:: start()
+
+        Register the receiver with all the actions and categories, and start
+        handling events.
+
+    .. method:: stop()
+
+        Unregister the receiver with all the actions and categories, and stop
+        handling events.
+
+Example::
+
+    class TestApp(App):
+
+        def build(self):
+            self.br = BroadcastReceiver(
+                self.on_broadcast, actions=['headset_plug'])
+            self.br.start()
+            # ...
+
+        def on_broadcast(self, context, intent):
+            extras = intent.getExtras()
+            headset_state = bool(extras.get('state'))
+            if headset_state:
+                print 'The headset is plugged'
+            else:
+                print 'The headset is unplugged'
+
+        # don't forget to stop and restart the receiver when the app is going
+        # to pause / resume mode
+
+        def on_pause(self):
+            self.br.stop()
+            return True
+
+        def on_resume(self):
+            self.br.start()
 
 
 Old Version
@@ -433,4 +577,72 @@ It has several differences from the pygame mixer:
 
     The android_mixer module hasn't been tested much, and so bugs may be
     present.
+
+
+
+android_billing
+~~~~~~~~~~~~~~~
+
+.. module:: android_billing
+
+This billing module give an access to the `In-App Billing <http://developer.android.com/guide/google/play/billing/billing_overview.html>`_:
+
+#. `Setup a test accounts <http://developer.android.com/guide/google/play/billing/billing_admin.html#billing-testing-setup>`, and get your Public Key
+#. Export your public key::
+
+    export BILLING_PUBKEY="Your public key here"
+
+#. `Setup some In-App product <http://developer.android.com/guide/google/play/billing/billing_admin.html>`_ to buy. Let's say you've created a product with the id "org.kivy.gopremium"
+
+#. In your application, you can use the billing module like this::
+
+
+    from android_billing import BillingService
+    from kivy.clock import Clock
+
+    class MyBillingService(object):
+
+        def __init__(self):
+            super(MyBillingService, self).__init__()
+
+            # Start the billing service, and attach our callback
+            self.service = BillingService(billing_callback)
+
+            # Start a clock to check billing service message every seconds
+            Clock.schedule_interval(self.service.check, 1)
+
+        def billing_callback(self, action, *largs):
+            '''Callback that will receive all the event from the Billing service
+            '''
+            if action == BillingService.BILLING_ACTION_ITEMSCHANGED:
+                items = largs[0]
+                if 'org.kivy.gopremium' in items:
+                    print 'Congratulation, you have a premium acess'
+                else:
+                    print 'Unfortunately, you dont have premium access'
+
+        def buy(self, sku):
+            # Method to buy something.
+            self.service.buy(sku)
+
+        def get_purchased_items(self):
+            # Return all the items purchased
+            return self.service.get_purchased_items()
+
+#. To initiate a in-app purchase, just call the buy method::
+
+    # Note: start the service at the start, and never twice!
+    bs = MyBillingService()
+    bs.buy('org.kivy.gopremium')
+
+    # Later, when you get the notification that items have been changed, you
+    # can still check all the items you bought:
+    print bs.get_purchased_items()
+    {'org.kivy.gopremium': {'qt: 1}}
+
+#. You'll receive all the notification about the billing process in the callback.
+
+#. Last step, create your application with `--with-billing $BILLING_PUBKEY`::
+
+    ./build.py ... --with-billing $BILLING_PUBKEY
 
