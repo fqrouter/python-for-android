@@ -644,15 +644,13 @@ function run_distribute() {
 	push_arm
 	try find "$DIST_PATH"/private -iname '*.so' -exec $STRIP {} \;
 	pop_arm
+	mv $DIST_PATH/private/lib/libssl.so $DIST_PATH/private/lib/libssl.so.1.0.0
+	mv $DIST_PATH/private/lib/libcrypto.so $DIST_PATH/private/lib/libcrypto.so.1.0.0
 
     cd $DIST_PATH/private
 	zip -9 -r $ROOT_PATH/python.zip bin
 	zip -9 -r $ROOT_PATH/python.zip lib
 	zip -9 -r $ROOT_PATH/python.zip include
-
-	cd $DIST_PATH/private/lib
-	ln -s libssl.so libssl.so.1.0.0
-	ln -s libcrypto.so libcrypto.so.1.0.0
 }
 
 function run_biglink() {
