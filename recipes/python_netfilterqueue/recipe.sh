@@ -1,6 +1,6 @@
 #!/bin/bash
 
-URL_python_netfilterqueue=https://github.com/fqrouter/python-netfilterqueue/archive/master.zip
+URL_python_netfilterqueue=https://github.com/fqrouter/python-netfilterqueue/archive/v0.6.tar.gz
 DEPS_python_netfilterqueue=(libnetfilter_queue python)
 MD5_python_netfilterqueue=
 BUILD_python_netfilterqueue=$BUILD_PATH/python_netfilterqueue/$(get_directory $URL_python_netfilterqueue)
@@ -24,7 +24,7 @@ function build_python_netfilterqueue() {
 
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -I$RECIPE_libnetfilter_queue/jni/libnfnetlink/include -I$RECIPE_libnetfilter_queue/jni/libnetfilter_queue/include
 	try find . -iname '*.pyx' -exec cython {} \;
-	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v
+	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v -I$RECIPE_libnetfilter_queue/jni/libnfnetlink/include -I$RECIPE_libnetfilter_queue/jni/libnetfilter_queue/include
 	try find build/lib.* -name "*.o" -exec $STRIP {} \;
 
 	export PYTHONPATH=$BUILD_hostpython/Lib/site-packages

@@ -617,7 +617,6 @@ function run_distribute() {
 
 	# we are sure that all of theses will be never used on android (well...)
 	try rm -rf test
-	try rm -rf ctypes
 	try rm -rf lib2to3
 	try rm -rf lib-tk
 	try rm -rf idlelib

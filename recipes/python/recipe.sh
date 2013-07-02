@@ -31,6 +31,7 @@ function prebuild_python() {
 	try patch -p1 < $RECIPE_python/patches/npn.patch
 	try patch -p1 < $RECIPE_python/patches/fix-sendfd.patch
 	try patch -p1 < $RECIPE_python/patches/enable-unix-socket.patch
+	try patch -p1 < $RECIPE_python/patches/fix-ctypes-build.patch
 
 	system=$(uname -s)
 	if [ "X$system" == "XDarwin" ]; then
@@ -71,6 +72,9 @@ function build_python() {
 		export CFLAGS="$CFLAGS -I$BUILD_sqlite3"
 		export LDFLAGS="$LDFLAGS -L$SRC_PATH/obj/local/$ARCH/"
 	fi
+
+	export HOSTARCH=arm-linux
+    export BUILDARCH=x86_64-linux-gnu
 
 	try ./configure --host=arm-eabi --prefix="$BUILD_PATH/python-install" --enable-shared --disable-toolbox-glue --disable-framework
 	echo ./configure --host=arm-eabi --prefix="$BUILD_PATH/python-install" --enable-shared --disable-toolbox-glue --disable-framework
