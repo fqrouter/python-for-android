@@ -1,8 +1,8 @@
 Usage
-=====
+-----
 
 Step 1: compile the toolchain
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to compile the toolchain with only kivy module::
 
@@ -12,14 +12,27 @@ After a long time, you'll get a "dist/default" directory containing all the comp
 libraries and build.py script to package your application using thoses
 libraries.
 
-You can include other modules (or "recipes") to compile using `-m`. Put the C
-libraries to compile before any Python module, order is important.
+You can include other modules (or "recipes") to compile using `-m`::
 
     ./distribute.sh -m "openssl kivy"
     ./distribute.sh -m "pil ffmpeg kivy"
 
+You can also specify a specific version for each package. Please note that the
+compilation might **break** if you don't use the default version. Most recipes
+have patch to fixes android issues, and might not apply if you specify a
+version. We also recommand to clean build/ before changing version.::
 
-For a full list, refer to :ref:`recipes`
+    ./distribute.sh -m "openssl kivy==master"
+
+The list of available recipes is available at:
+https://github.com/kivy/python-for-android/tree/master/recipes
+
+From python-for-android 1.1, you can now specify pure-python package into the
+-m. It will use virtualenv and pip to install pure-python modules into the
+distribution. Please note that compiler are deactivated, and will break any
+module who try to compile something. If compilation is needed, write a recipe::
+
+    ./distribute.sh -m "requests pygments kivy"
 
 .. note::
 
@@ -35,9 +48,10 @@ Available options to `distribute.sh`::
     -l                     Show a list of available modules
     -m 'mod1 mod2'         Modules to include
     -f                     Restart from scratch (remove the current build)
+    -u 'mod1 mod2'         Modules to update (if already compiled)
 
 Step 2: package your application
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Go fo your custom python distribution::
 
@@ -106,3 +120,37 @@ Available options to `build.py`::
                           Minimum Android SDK version to use. Default to 8
     --window              Indicate if the application will be windowed
 
+Meta-data
+---------
+
+.. versionadded:: 1.3
+
+You can extend the `AndroidManifest.xml` with application meta-data. If you are
+using external toolkits like Google Maps, you might want to set your API key in
+the meta-data. You could do it like this::
+
+    ./build.py ... --meta-data com.google.android.maps.v2.API_KEY=YOURAPIKEY
+
+Some meta-data can be used to interact with the behavior of our internal
+component.
+
+.. list-table::
+    :widths: 100 500
+    :header-rows: 1
+
+    * - Token
+      - Description
+    * - `surface.transparent`
+      - If set to 1, the created surface will be transparent (can be used
+        to add background Android widget in the background, or use accelerated
+        widgets)
+    * - `surface.depth`
+      - Size of the depth component, default to 0. 0 means automatic, but you
+        can force it to a specific value. Be warned, some old phone might not
+        support the depth you want.
+    * - `surface.stencil`
+      - Size of the stencil component, default to 8.
+    * - `android.background_color`
+      - Color (32bits RGBA color), used for the background window. Usually, the
+        background is covered by the OpenGL Background, unless
+        `surface.transparent` is set.

@@ -2,11 +2,9 @@ package org.renpy.android;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.ActivityNotFoundException;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.MotionEvent;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
@@ -21,8 +19,8 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.File;
 import java.io.IOException;
-
-import java.util.zip.GZIPInputStream;
+import java.util.Collections;
+import java.util.Iterator;
 
 // Billing
 import org.renpy.android.Configuration;
@@ -45,7 +43,7 @@ import android.content.Context;
 
 
 public class PythonActivity extends Activity implements Runnable {
-	private static String TAG = "Python";
+    private static String TAG = "Python";
 
     // The audio thread for streaming audio...
     private static AudioThread mAudioThread = null;
@@ -68,7 +66,7 @@ public class PythonActivity extends Activity implements Runnable {
 
     boolean _isPaused = false;
 
-	private static final String DB_INITIALIZED = "db_initialized";
+    private static final String DB_INITIALIZED = "db_initialized";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +74,7 @@ public class PythonActivity extends Activity implements Runnable {
 
         Hardware.context = this;
         Action.context = this;
-		this.mActivity = this;
+        this.mActivity = this;
 
         getWindowManager().getDefaultDisplay().getMetrics(Hardware.metrics);
 
@@ -135,9 +133,9 @@ public class PythonActivity extends Activity implements Runnable {
         } catch (PackageManager.NameNotFoundException e) {
         }
 
-		if ( Configuration.use_billing ) {
-			mBillingHandler = new Handler();
-		}
+        if ( Configuration.use_billing ) {
+            mBillingHandler = new Handler();
+        }
 
         // Start showing an SDLSurfaceView.
         mView = new SDLSurfaceView(
@@ -146,7 +144,13 @@ public class PythonActivity extends Activity implements Runnable {
 
         Hardware.view = mView;
         setContentView(mView);
-	}
+
+        // Force the background window color if asked
+        if ( this.mInfo.metaData.containsKey("android.background_color") ) {
+            getWindow().getDecorView().setBackgroundColor(
+                this.mInfo.metaData.getInt("android.background_color"));
+        }
+    }
 
     /**
      * Show an error using a toast. (Only makes sense from non-UI
@@ -328,26 +332,15 @@ public class PythonActivity extends Activity implements Runnable {
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(final MotionEvent ev) {
-
-        if (mView != null){
-            mView.onTouchEvent(ev);
-            return true;
-        } else {
-            return super.dispatchTouchEvent(ev);
-        }
-    }
-
-	protected void onDestroy() {
+    protected void onDestroy() {
         mPurchaseDatabase.close();
         mBillingService.unbind();
 
-		if (mView != null) {
-			mView.onDestroy();
-		}
+        if (mView != null) {
+            mView.onDestroy();
+        }
 
-		//Log.i(TAG, "on destroy (exit1)");
+        //Log.i(TAG, "on destroy (exit1)");
         System.exit(0);
     }
 
@@ -371,11 +364,80 @@ public class PythonActivity extends Activity implements Runnable {
         PythonActivity.mActivity.stopService(serviceIntent);
     }
 
+    //----------------------------------------------------------------------------
+    // Listener interface for onNewIntent
+    //
 
+    public interface NewIntentListener {
+        void onNewIntent(Intent intent);
+    }
 
-	//----------------------------------------------------------------------------
-	// Billing
-	//
+    private List<NewIntentListener> newIntentListeners = null;
+
+    public void registerNewIntentListener(NewIntentListener listener) {
+        if ( this.newIntentListeners == null )
+            this.newIntentListeners = Collections.synchronizedList(new ArrayList<NewIntentListener>());
+        this.newIntentListeners.add(listener);
+    }
+
+    public void unregisterNewIntentListener(NewIntentListener listener) {
+        if ( this.newIntentListeners == null )
+            return;
+        this.newIntentListeners.remove(listener);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        if ( this.newIntentListeners == null )
+            return;
+        if ( this.mView != null )
+            this.mView.onResume();
+        synchronized ( this.newIntentListeners ) {
+            Iterator<NewIntentListener> iterator = this.newIntentListeners.iterator();
+            while ( iterator.hasNext() ) {
+                (iterator.next()).onNewIntent(intent);
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------------
+    // Listener interface for onActivityResult
+    //
+
+    public interface ActivityResultListener {
+        void onActivityResult(int requestCode, int resultCode, Intent data);
+    }
+
+    private List<ActivityResultListener> activityResultListeners = null;
+
+    public void registerActivityResultListener(ActivityResultListener listener) {
+        if ( this.activityResultListeners == null )
+            this.activityResultListeners = Collections.synchronizedList(new ArrayList<ActivityResultListener>());
+        this.activityResultListeners.add(listener);
+    }
+
+    public void unregisterActivityResultListener(ActivityResultListener listener) {
+        if ( this.activityResultListeners == null )
+            return;
+        this.activityResultListeners.remove(listener);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if ( this.activityResultListeners == null )
+            return;
+        if ( this.mView != null )
+            this.mView.onResume();
+        synchronized ( this.activityResultListeners ) {
+            Iterator<ActivityResultListener> iterator = this.activityResultListeners.iterator();
+            while ( iterator.hasNext() )
+                (iterator.next()).onActivityResult(requestCode, resultCode, intent);
+        }
+    }
+
+    //----------------------------------------------------------------------------
+    // Billing
+    //
     class PythonPurchaseObserver extends PurchaseObserver {
         public PythonPurchaseObserver(Handler handler) {
             super(PythonActivity.this, handler);
@@ -387,40 +449,40 @@ public class PythonActivity extends Activity implements Runnable {
                 Log.i(TAG, "supported: " + supported);
             }
 
-			String sup = "1";
-			if ( !supported )
-				sup = "0";
-			if (type == null)
-				type = Consts.ITEM_TYPE_INAPP;
+            String sup = "1";
+            if ( !supported )
+                sup = "0";
+            if (type == null)
+                type = Consts.ITEM_TYPE_INAPP;
 
-			// add notification for python message queue
-			mActivity.mBillingQueue.add("billingSupported|" + type + "|" + sup);
+            // add notification for python message queue
+            mActivity.mBillingQueue.add("billingSupported|" + type + "|" + sup);
 
-			// for managed items, restore the database
-			if ( type == Consts.ITEM_TYPE_INAPP && supported ) {
-				restoreDatabase();
-			}
+            // for managed items, restore the database
+            if ( type == Consts.ITEM_TYPE_INAPP && supported ) {
+                restoreDatabase();
+            }
         }
 
         @Override
         public void onPurchaseStateChange(PurchaseState purchaseState, String itemId,
                 int quantity, long purchaseTime, String developerPayload) {
-			mActivity.mBillingQueue.add(
-				"purchaseStateChange|" + itemId + "|" + purchaseState.toString());
+            mActivity.mBillingQueue.add(
+                "purchaseStateChange|" + itemId + "|" + purchaseState.toString());
         }
 
         @Override
         public void onRequestPurchaseResponse(RequestPurchase request,
                 ResponseCode responseCode) {
-			mActivity.mBillingQueue.add(
-				"requestPurchaseResponse|" + request.mProductId + "|" + responseCode.toString());
+            mActivity.mBillingQueue.add(
+                "requestPurchaseResponse|" + request.mProductId + "|" + responseCode.toString());
         }
 
         @Override
         public void onRestoreTransactionsResponse(RestoreTransactions request,
                 ResponseCode responseCode) {
             if (responseCode == ResponseCode.RESULT_OK) {
-				mActivity.mBillingQueue.add("restoreTransaction|ok");
+                mActivity.mBillingQueue.add("restoreTransaction|ok");
                 if (Consts.DEBUG) {
                     Log.d(TAG, "completed RestoreTransactions request");
                 }
@@ -435,8 +497,8 @@ public class PythonActivity extends Activity implements Runnable {
                     Log.d(TAG, "RestoreTransactions error: " + responseCode);
                 }
 
-				mActivity.mBillingQueue.add(
-					"restoreTransaction|error|" + responseCode.toString());
+                mActivity.mBillingQueue.add(
+                    "restoreTransaction|error|" + responseCode.toString());
             }
         }
     }
@@ -456,7 +518,7 @@ public class PythonActivity extends Activity implements Runnable {
         }
     }
 
-	/** An array of product list entries for the products that can be purchased. */
+    /** An array of product list entries for the products that can be purchased. */
 
     private enum Managed { MANAGED, UNMANAGED, SUBSCRIPTION }
 
@@ -464,55 +526,55 @@ public class PythonActivity extends Activity implements Runnable {
     private PythonPurchaseObserver mPythonPurchaseObserver;
     private Handler mBillingHandler;
     private BillingService mBillingService;
-	private PurchaseDatabase mPurchaseDatabase;
-	private String mPayloadContents;
-	public List<String> mBillingQueue;
+    private PurchaseDatabase mPurchaseDatabase;
+    private String mPayloadContents;
+    public List<String> mBillingQueue;
 
-	public void billingServiceStart_() {
-		mBillingQueue = new ArrayList<String>();
+    public void billingServiceStart_() {
+        mBillingQueue = new ArrayList<String>();
 
-		// Start the billing part
-		mPythonPurchaseObserver = new PythonPurchaseObserver(mBillingHandler);
-		mBillingService = new BillingService();
-		mBillingService.setContext(this);
-		mPurchaseDatabase = new PurchaseDatabase(this);
+        // Start the billing part
+        mPythonPurchaseObserver = new PythonPurchaseObserver(mBillingHandler);
+        mBillingService = new BillingService();
+        mBillingService.setContext(this);
+        mPurchaseDatabase = new PurchaseDatabase(this);
 
-		ResponseHandler.register(mPythonPurchaseObserver);
-		if (!mBillingService.checkBillingSupported()) {
-			//showDialog(DIALOG_CANNOT_CONNECT_ID);
-			Log.w(TAG, "NO BILLING SUPPORTED");
-		}
-		if (!mBillingService.checkBillingSupported(Consts.ITEM_TYPE_SUBSCRIPTION)) {
-			//showDialog(DIALOG_SUBSCRIPTIONS_NOT_SUPPORTED_ID);
-			Log.w(TAG, "NO SUBSCRIPTION SUPPORTED");
-		}
+        ResponseHandler.register(mPythonPurchaseObserver);
+        if (!mBillingService.checkBillingSupported()) {
+            //showDialog(DIALOG_CANNOT_CONNECT_ID);
+            Log.w(TAG, "NO BILLING SUPPORTED");
+        }
+        if (!mBillingService.checkBillingSupported(Consts.ITEM_TYPE_SUBSCRIPTION)) {
+            //showDialog(DIALOG_SUBSCRIPTIONS_NOT_SUPPORTED_ID);
+            Log.w(TAG, "NO SUBSCRIPTION SUPPORTED");
+        }
     }
 
-	public void billingServiceStop_() {
-	}
+    public void billingServiceStop_() {
+    }
 
     public void billingBuy_(String mSku) {
-		Managed mManagedType = Managed.MANAGED;
-		if (Consts.DEBUG) {
-			Log.d(TAG, "buying sku: " + mSku);
-		}
+        Managed mManagedType = Managed.MANAGED;
+        if (Consts.DEBUG) {
+            Log.d(TAG, "buying sku: " + mSku);
+        }
 
-		if (mManagedType == Managed.MANAGED) {
-			if (!mBillingService.requestPurchase(mSku, Consts.ITEM_TYPE_INAPP, mPayloadContents)) {
-				Log.w(TAG, "ERROR IN BILLING REQUEST PURCHASE");
-			}
-		} else if (mManagedType == Managed.SUBSCRIPTION) {
-			if (!mBillingService.requestPurchase(mSku, Consts.ITEM_TYPE_INAPP, mPayloadContents)) {
-				Log.w(TAG, "ERROR IN BILLING REQUEST PURCHASE");
-			}
-		}
-	}
+        if (mManagedType == Managed.MANAGED) {
+            if (!mBillingService.requestPurchase(mSku, Consts.ITEM_TYPE_INAPP, mPayloadContents)) {
+                Log.w(TAG, "ERROR IN BILLING REQUEST PURCHASE");
+            }
+        } else if (mManagedType == Managed.SUBSCRIPTION) {
+            if (!mBillingService.requestPurchase(mSku, Consts.ITEM_TYPE_INAPP, mPayloadContents)) {
+                Log.w(TAG, "ERROR IN BILLING REQUEST PURCHASE");
+            }
+        }
+    }
 
-	public String billingGetPurchasedItems_() {
-		String ownedItems = "";
+    public String billingGetPurchasedItems_() {
+        String ownedItems = "";
         Cursor cursor = mPurchaseDatabase.queryAllPurchasedItems();
         if (cursor == null)
-			return "";
+            return "";
 
         try {
             int productIdCol = cursor.getColumnIndexOrThrow(
@@ -523,43 +585,43 @@ public class PythonActivity extends Activity implements Runnable {
                 String productId = cursor.getString(productIdCol);
                 String qt = cursor.getString(qtCol);
 
-				productId = Security.unobfuscate(this, Configuration.billing_salt, productId);
-				if ( productId == null )
-					continue;
+                productId = Security.unobfuscate(this, Configuration.billing_salt, productId);
+                if ( productId == null )
+                    continue;
 
-				if ( ownedItems != "" )
-					ownedItems += "\n";
-				ownedItems += productId + "," + qt;
+                if ( ownedItems != "" )
+                    ownedItems += "\n";
+                ownedItems += productId + "," + qt;
             }
         } finally {
             cursor.close();
         }
 
-		return ownedItems;
-	}
+        return ownedItems;
+    }
 
 
-	static void billingServiceStart() {
-		mActivity.billingServiceStart_();
-	}
+    static void billingServiceStart() {
+        mActivity.billingServiceStart_();
+    }
 
-	static void billingServiceStop() {
-		mActivity.billingServiceStop_();
-	}
+    static void billingServiceStop() {
+        mActivity.billingServiceStop_();
+    }
 
-	static void billingBuy(String sku) {
-		mActivity.billingBuy_(sku);
-	}
+    static void billingBuy(String sku) {
+        mActivity.billingBuy_(sku);
+    }
 
-	static String billingGetPurchasedItems() {
-		return mActivity.billingGetPurchasedItems_();
-	}
+    static String billingGetPurchasedItems() {
+        return mActivity.billingGetPurchasedItems_();
+    }
 
-	static String billingGetPendingMessage() {
-		if (mActivity.mBillingQueue.isEmpty())
-			return null;
-		return mActivity.mBillingQueue.remove(0);
-	}
+    static String billingGetPendingMessage() {
+        if (mActivity.mBillingQueue.isEmpty())
+            return null;
+        return mActivity.mBillingQueue.remove(0);
+    }
 
 }
 

@@ -37,3 +37,9 @@ function build_gevent() {
 function postbuild_gevent() {
 	true
 }
+
+function shouldbuild_gevent() {
+	if [ -d "$SITEPACKAGES_PATH/gevent" ]; then
+		DO_BUILD=0
+	fi
+}

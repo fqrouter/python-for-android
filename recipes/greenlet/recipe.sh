@@ -1,9 +1,10 @@
 #!/bin/bash
 
-VERSION_greenlet=0.4.0
-URL_greenlet=https://pypi.python.org/packages/source/g/greenlet/greenlet-0.4.0.zip
-DEPS_greenlet=(hostpython python)
-MD5_greenlet=87887570082caadc08fb1f8671dbed71
+VERSION_greenlet=${VERSION_greenlet:-0.4.1}
+URL_greenlet=https://pypi.python.org/packages/source/g/greenlet/greenlet-$VERSION_greenlet.zip
+https://github.com/downloads/greenlet/greenlet/greenlet-$VERSION_greenlet.tar.gz
+DEPS_greenlet=(python)
+MD5_greenlet=c2deda75bdda59c38cae12a77cc53adc
 BUILD_greenlet=$BUILD_PATH/greenlet/$(get_directory $URL_greenlet)
 RECIPE_greenlet=$RECIPES_PATH/greenlet
 
@@ -35,4 +36,10 @@ function build_greenlet() {
 
 function postbuild_greenlet() {
 	true
+}
+
+function shouldbuild_greenlet() {
+	if [ -d "$SITEPACKAGES_PATH/greenlet" ]; then
+		DO_BUILD=0
+	fi
 }

@@ -1,5 +1,5 @@
 Prerequisites
-=============
+-------------
 
 .. note::
     There is a VirtualBox Image we provide with the prerequisites along with
@@ -15,7 +15,7 @@ You need the minimal environment for building python. Note that other libraries
 might need other tools (cython is used by some recipes, and ccache to speedup the build)::
 
     sudo apt-get install build-essential patch git-core ccache ant python-pip python-dev
- 
+
 If you are on a 64 bit distro, you should install these packages too ::
 
     sudo apt-get install ia32-libs and libc6-dev-i386
@@ -66,5 +66,5 @@ After installing them, export both installation path, NDK version and API to use
 
 Also, you must configure you're PATH to add the ``android`` binary::
 
-    export PATH=$ANDROIDNDK:$ANDROIDSDK/tools:$PATH
+    export PATH=$ANDROIDNDK:$ANDROIDSDK/platform-tools:$ANDROIDSDK/tools:$PATH
 

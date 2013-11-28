@@ -246,6 +246,9 @@ def make_package(args):
             print 'Invalid --ouya-category argument. should be one of GAME or APP'
             sys.exit(-1)
 
+    # Get target android API
+    android_api = int(os.environ.get('ANDROIDAPI', '8'))
+
     # Render the various templates into control files.
     render(
         'AndroidManifest.tmpl.xml',
@@ -255,7 +258,7 @@ def make_package(args):
         url_scheme=url_scheme,
         intent_filters=intent_filters,
         manifest_extra=manifest_extra,
-        )
+        android_api=android_api)
 
     render(
         'Configuration.tmpl.java',
@@ -277,9 +280,9 @@ def make_package(args):
         args=args)
 
     # Update the project to a recent version.
-    android_api = 'android-%s' % os.environ.get('ANDROIDAPI', '8')
     try:
-        subprocess.call([ANDROID, 'update', 'project', '-p', '.', '-t', android_api])
+        subprocess.call([ANDROID, 'update', 'project', '-p', '.', '-t',
+            'android-{}'.format(android_api)])
     except (OSError, IOError):
         print 'An error occured while calling', ANDROID, 'update'
         print 'Your PATH must include android tools.'
@@ -325,7 +328,8 @@ def make_package(args):
 
     # Build.
     try:
-        map(lambda arg: subprocess.call([ANT, arg]), args.command)
+        for arg in args.command:
+            subprocess.check_call([ANT, arg])
     except (OSError, IOError):
         print 'An error occured while calling', ANT
         print 'Did you install ant on your system ?'
@@ -373,6 +377,8 @@ tools directory of the Android SDK.
             help='Indicate if the application needs the device to stay on')
     ap.add_argument('command', nargs='*', help='The command to pass to ant (debug, release, installd, installr)')
     ap.add_argument('--add-jar', dest='add_jar', action='append', help='Add a Java .jar to the libs, so you can access its classes with pyjnius. You can specify this argument more than once to include multiple jars')
+    ap.add_argument('--meta-data', dest='meta_data', action='append',
+            help='Custom key=value to add in application metadata')
 
     args = ap.parse_args()
 
@@ -384,6 +390,9 @@ tools directory of the Android SDK.
 
     if args.ignore_path is None:
         args.ignore_path = []
+
+    if args.meta_data is None:
+        args.meta_data = []
 
     if args.compile_pyo:
         if PYTHON is None:

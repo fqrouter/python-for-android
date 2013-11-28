@@ -22,3 +22,7 @@ recipes/python_launcher/obj
 recipes/libnetfilter_queue/libs
 recipes/libnetfilter_queue/obj
 python.zip
+
+.deps
+
+.optional-deps

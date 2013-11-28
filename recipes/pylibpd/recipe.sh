@@ -1,8 +1,8 @@
 #!/bin/bash
 
-VERSION_pylibpd=
+VERSION_pylibpd=${VERSION_pylibpd:-master}
 DEPS_pylibpd=(python)
-URL_pylibpd=https://github.com/libpd/libpd/archive/master.zip
+URL_pylibpd=https://github.com/libpd/libpd/archive/$VERSION_pylibpd.zip
 MD5_pylibpd=
 BUILD_pylibpd=$BUILD_PATH/pylibpd/$(get_directory $URL_pylibpd)
 RECIPE_pylibpd=$RECIPES_PATH/pylibpd
@@ -17,12 +17,18 @@ function prebuild_pylibpd() {
     touch .patched
 }
 
+function shouldbuild_pylibpd() {
+	if [ -d "$SITEPACKAGES_PATH/pylibpd" ]; then
+		DO_BUILD=0
+	fi
+}
+
 function build_pylibpd() {
     cd $BUILD_pylibpd/python
     push_arm
-    try $BUILD_PATH/python-install/bin/python.host setup.py build
-    try $BUILD_PATH/python-install/bin/python.host setup.py install -O2
-    try $BUILD_PATH/python-install/bin/python.host setup.py clean
+    try $HOSTPYTHON setup.py build
+    try $HOSTPYTHON setup.py install -O2
+    try $HOSTPYTHON setup.py clean
     pop_arm
 }
 
