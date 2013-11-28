@@ -6,9 +6,9 @@
 #
 #------------------------------------------------------------------------------
 export ANDROIDSDK="/home/dejavu/android/sdk"
-export ANDROIDNDK="/home/dejavu/android/android-ndk-r8d"
-export ANDROIDNDKVER=r8d
-export ANDROIDAPI=14
+export ANDROIDNDK="/home/dejavu/android/android-ndk-r9b"
+export ANDROIDNDKVER=r9b
+export ANDROIDAPI=9
 # Modules
 MODULES=
 
