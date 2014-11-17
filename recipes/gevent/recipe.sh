@@ -1,9 +1,9 @@
 #!/bin/bash
 
-VERSION_gevent=1.0rc2
-URL_gevent=https://gevent.googlecode.com/files/gevent-1.0rc2.tar.gz
+VERSION_gevent=1.0
+URL_gevent=https://pypi.python.org/packages/source/g/gevent/gevent-1.0.tar.gz
 DEPS_gevent=(greenlet hostpython python)
-MD5_gevent=3061c1c431b83b730e64a547f9fb82c0 
+MD5_gevent=33aef51a06268f5903fea378e1388e4d
 BUILD_gevent=$BUILD_PATH/gevent/$(get_directory $URL_gevent)
 RECIPE_gevent=$RECIPES_PATH/gevent
 
